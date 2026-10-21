@@ -60,6 +60,8 @@ dsh plugin --profile <你的 profile> add link:/path/to/dsh-rich-cards
 
 也可以自己手写——渲染器只认 `card` 这个 info string，正文必须是合法 JSON。
 
+配图也是这个约定的一部分：讲人物、地点、作品时先查一张真图（Windows 上用 curl 走维基图库接口），查到就配上 url + 说明 + 来源；两三次查不到就安静地不配图，不在正文里交代“接口被拦”“没找到配图”——缺图不是新闻。
+
 | 块类型 | 作用 |
 | --- | --- |
 | `heading` `paragraph` | 小节标题、正文段落 |
