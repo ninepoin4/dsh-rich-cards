@@ -375,6 +375,18 @@ window.__ModuleLoader__.load({
 
 .rc-fence { margin: 14px 0 6px; }
 
+/* A claimed fence keeps its card but loses the code-block chrome: the 代码块 label,
+   the copy button and the grey frame the markdown renderer drew around the source. */
+.rc-fence-shell {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.rc-fence-shell > [data-rc-fence-head="1"] { display: none !important; }
+
 .rc-turn { margin: 10px 0 2px; }
 
 @keyframes rc-in {
@@ -791,6 +803,7 @@ window.__ModuleLoader__.load({
       function mount(pre, spec) {
         pre.setAttribute('data-rc-claimed', '1');
         pre.style.display = 'none';
+        hideChrome(pre);
         // Re-rendering the message can hand us a fresh <pre> next to an older card; drop that
         // card first so one fence never produces two cards.
         if (pre.parentNode) {
@@ -814,6 +827,26 @@ window.__ModuleLoader__.load({
         try {
           root.render(h(Card, { spec: spec }));
         } catch (error) {}
+      }
+
+      /** Hide the source chrome around a claimed fence: the label row with the copy button
+       *  is a direct sibling of the <pre>, and its wrapper is the grey box we now replace. */
+      function hideChrome(pre) {
+        const shell = pre.parentNode;
+        if (!shell || !shell.children || shell === document.body) return;
+        let hid = false;
+        const kids = Array.prototype.slice.call(shell.children);
+        for (let index = 0; index < kids.length; index += 1) {
+          const kid = kids[index];
+          if (kid === pre || kid.tagName === 'PRE') continue;
+          if (!kid.querySelector || !kid.querySelector('button')) continue;
+          const label = (kid.textContent || '').trim();
+          if (label.length > 24) continue;
+          kid.setAttribute('data-rc-fence-head', '1');
+          kid.style.display = 'none';
+          hid = true;
+        }
+        if (hid) shell.classList.add('rc-fence-shell');
       }
 
       function sweep() {

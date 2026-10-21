@@ -24,6 +24,12 @@
 <td align="center"><sub>card 布局：公式、定义、对比</sub></td>
 <td align="center"><sub>article 布局：长文、时间线、来源</sub></td>
 </tr>
+<tr>
+<td colspan="2" align="center"><img src="assets/shot-whale.png" alt="DeepSeek logo 卡片，配图来自 Wikimedia Commons" width="62%"></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><sub>article + 真实配图：写卡前先查一张图，代码块的抬头和灰框会被隐藏</sub></td>
+</tr>
 </table>
 
 ## 安装
