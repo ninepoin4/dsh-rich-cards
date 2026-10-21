@@ -2,3 +2,5 @@ node_modules/
 *.log
 _patch*.py
 .DS_Store
+.dsh-ops-*.lock
+dsh-ops-*.lock
