@@ -82,6 +82,8 @@ dsh plugin --profile <你的 profile> add link:/path/to/dsh-rich-cards
 
 失败即降级（fail open）：卡片写坏最多显示成一段代码，永远不会中断整轮回答——这也是它不用工具调用传参的原因。
 
+更长的版本（为什么这么设计、两条通道的取舍、拆壳的细节）在 [docs/intro.md](docs/intro.md)。
+
 ## 已知边界
 
 - 一张回答只渲染一张卡（最后一张生效）；
