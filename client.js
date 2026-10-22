@@ -829,24 +829,37 @@ window.__ModuleLoader__.load({
         } catch (error) {}
       }
 
-      /** Hide the source chrome around a claimed fence: the label row with the copy button
-       *  is a direct sibling of the <pre>, and its wrapper is the grey box we now replace. */
-      function hideChrome(pre) {
-        const shell = pre.parentNode;
-        if (!shell || !shell.children || shell === document.body) return;
-        let hid = false;
-        const kids = Array.prototype.slice.call(shell.children);
-        for (let index = 0; index < kids.length; index += 1) {
-          const kid = kids[index];
-          if (kid === pre || kid.tagName === 'PRE') continue;
-          if (!kid.querySelector || !kid.querySelector('button')) continue;
-          const label = (kid.textContent || '').trim();
-          if (label.length > 24) continue;
-          kid.setAttribute('data-rc-fence-head', '1');
-          kid.style.display = 'none';
-          hid = true;
+      /** Hide the source chrome around a claimed fence. The renderer may nest the block in more
+       *  than one wrapper, so find the little label row by its copy control rather than by
+       *  position, then flatten the smallest box that holds both that row and the <pre>. */
+      function findLabelRow(scope, pre) {
+        const controls = scope.querySelectorAll('button, [role="button"]');
+        for (let index = 0; index < controls.length; index += 1) {
+          let row = controls[index].parentNode;
+          for (let hop = 0; hop < 3 && row && row !== scope.parentNode; hop += 1) {
+            if (row.contains && row.contains(pre)) break;
+            if ((row.textContent || '').trim().length <= 24) return row;
+            row = row.parentNode;
+          }
         }
-        if (hid) shell.classList.add('rc-fence-shell');
+        return null;
+      }
+
+      function hideChrome(pre) {
+        if (!pre.parentNode || pre.parentNode === document.body) return;
+        let head = null;
+        let scope = pre.parentNode;
+        for (let depth = 0; depth < 3 && scope && scope !== document.body; depth += 1) {
+          head = findLabelRow(scope, pre);
+          if (head) break;
+          scope = scope.parentNode;
+        }
+        if (!head) return;
+        head.setAttribute('data-rc-fence-head', '1');
+        head.style.display = 'none';
+        let box = pre.parentNode;
+        while (box && box !== document.body && !box.contains(head)) box = box.parentNode;
+        if (box && box !== document.body) box.classList.add('rc-fence-shell');
       }
 
       function sweep() {
