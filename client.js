@@ -803,11 +803,13 @@ window.__ModuleLoader__.load({
       function mount(pre, spec) {
         pre.setAttribute('data-rc-claimed', '1');
         pre.style.display = 'none';
-        hideChrome(pre);
+        const shell = shellOf(pre);
+        const box = shell || pre.parentNode;
+        const parent = (box && box.parentNode) || null;
         // Re-rendering the message can hand us a fresh <pre> next to an older card; drop that
         // card first so one fence never produces two cards.
-        if (pre.parentNode) {
-          const stale = pre.parentNode.querySelector(':scope > .rc-fence');
+        if (parent) {
+          const stale = parent.querySelector(':scope > .rc-fence');
           if (stale) {
             const old = roots.get(stale);
             if (old) {
@@ -821,7 +823,12 @@ window.__ModuleLoader__.load({
         }
         const host = document.createElement('div');
         host.className = 'rc-fence';
-        if (pre.parentNode) pre.parentNode.insertBefore(host, pre.nextSibling);
+        if (parent && box) parent.insertBefore(host, box.nextSibling);
+        else if (pre.parentNode) pre.parentNode.insertBefore(host, pre.nextSibling);
+        // Only after the card is in the document: a code block we mistake for ours must never
+        // take the replacement with it.
+        if (shell) shell.style.display = 'none';
+        else if (box) hideBanner(box, pre);
         const root = ReactDOM.createRoot(host);
         roots.set(host, root);
         try {
@@ -829,9 +836,9 @@ window.__ModuleLoader__.load({
         } catch (error) {}
       }
 
-      /** Hide the source chrome around a claimed fence. The renderer may nest the block in more
-       *  than one wrapper, so find the little label row by its copy control rather than by
-       *  position, then flatten the smallest box that holds both that row and the <pre>. */
+      /** The renderer's code block is a box with the banner row and the content div as children
+       *    div.md-code-block > [div > div[data-code-block-banner]] + div[data-code-block-content] > pre
+       *  The hashed classes change between builds; the data attributes are stable. */
       function findLabelRow(scope, pre) {
         const controls = scope.querySelectorAll('button, [role="button"]');
         for (let index = 0; index < controls.length; index += 1) {
@@ -845,21 +852,32 @@ window.__ModuleLoader__.load({
         return null;
       }
 
-      function hideChrome(pre) {
-        if (!pre.parentNode || pre.parentNode === document.body) return;
-        let head = null;
-        let scope = pre.parentNode;
-        for (let depth = 0; depth < 3 && scope && scope !== document.body; depth += 1) {
-          head = findLabelRow(scope, pre);
-          if (head) break;
-          scope = scope.parentNode;
+      /** The box that holds nothing but this code block, or null when the structure is unfamiliar. */
+      function shellOf(pre) {
+        try {
+          const shell = pre.closest('.md-code-block');
+          if (shell) return shell;
+        } catch (error) {}
+        let node = pre.parentNode;
+        for (let depth = 0; depth < 3 && node && node !== document.body; depth += 1) {
+          if (node.querySelector && node.querySelector('[data-code-block-banner]')) return node;
+          node = node.parentNode;
         }
-        if (!head) return;
-        head.setAttribute('data-rc-fence-head', '1');
-        head.style.display = 'none';
-        let box = pre.parentNode;
-        while (box && box !== document.body && !box.contains(head)) box = box.parentNode;
-        if (box && box !== document.body) box.classList.add('rc-fence-shell');
+        return null;
+      }
+
+      /** Unknown build: drop the banner row and flatten the wrapper instead of hiding it. */
+      function hideBanner(box, pre) {
+        let row = box.querySelector('[data-code-block-banner]');
+        if (!row) row = findLabelRow(box, pre);
+        if (row) {
+          while (row.parentNode && row.parentNode !== box && row.parentNode.children.length === 1) {
+            row = row.parentNode;
+          }
+          row.setAttribute('data-rc-fence-head', '1');
+          row.style.display = 'none';
+        }
+        box.classList.add('rc-fence-shell');
       }
 
       function sweep() {
